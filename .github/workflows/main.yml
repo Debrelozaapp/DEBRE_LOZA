@@ -1,0 +1,57 @@
+name: Debre Loza APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-36" "build-tools;35.0.0"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Extract Android Project
+        run: |
+          mkdir -p DebreLozaProject
+          unzip -o Debre_Loza_Telegram_based_Android_Project.zip -d DebreLozaProject
+
+      - name: Verify Project
+        run: |
+          test -f DebreLozaProject/settings.gradle
+          test -f DebreLozaProject/build.gradle
+          test -f DebreLozaProject/TMessagesProj/build.gradle
+
+      - name: Build APK
+        working-directory: DebreLozaProject
+        run: |
+          gradle clean assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Debre-Loza-APK
+          path: DebreLozaProject/TMessagesProj/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
